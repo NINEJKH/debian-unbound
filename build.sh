@@ -18,7 +18,7 @@ while IFS= read -r -d '' -u 9; do
   temp="${temp%*/Dockerfile}"
 
   uscan --help
-  uscan --verbose --report-status --dehs "targets/${temp}/"
+  uscan --report-status --dehs --watchfile "targets/${temp}/debian/watch"
 
   cat <<EOF | tee changelog.txt
 unbound ($(uscan --report-status --dehs "targets/${temp}" | xmlstarlet sel --template --value-of "/dehs/upstream-version")-${TRAVIS_BUILD_NUMBER}) ${temp}; urgency=medium
