@@ -1,0 +1,159 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ unbound (1.6.7-1) unstable; urgency=medium
+ .
+   * New upstream version 1.6.7
+Author: Robert Edmonds <edmonds@debian.org>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: 2017-10-15
+
+--- unbound-1.6.7.orig/acx_python.m4
++++ unbound-1.6.7/acx_python.m4
+@@ -42,7 +42,12 @@ $ac_distutils_result])
+                 if test -n "${python_path}"; then
+                         python_path="-I$python_path"
+                 fi
+-                PYTHON_CPPFLAGS=$python_path
++                python_multiarch_path=`$PYTHON -c "import distutils.sysconfig; \
++                        print(distutils.sysconfig.get_python_inc(plat_specific=1));"`
++                if test -n "${python_multiarch_path}"; then
++                        python_multiarch_path="-I$python_multiarch_path"
++                fi
++                PYTHON_CPPFLAGS="$python_path $python_multiarch_path"
+         fi
+         AC_MSG_RESULT([$PYTHON_CPPFLAGS])
+         AC_SUBST([PYTHON_CPPFLAGS])
+--- unbound-1.6.7.orig/configure.ac
++++ unbound-1.6.7/configure.ac
+@@ -736,6 +736,19 @@ AC_INCLUDES_DEFAULT
+ fi
+ AC_SUBST(SSLLIB)
+ 
++# libbsd
++AC_ARG_WITH([libbsd], AC_HELP_STRING([--with-libbsd], [Use portable libbsd functions]), [
++	AC_CHECK_HEADERS([bsd/string.h bsd/stdlib.h],,, [AC_INCLUDES_DEFAULT])
++	if test "x$ac_cv_header_bsd_string_h" = xyes -a "x$ac_cv_header_bsd_stdlib_h" = xyes; then
++		for func in strlcpy strlcat arc4random arc4random_uniform reallocarray; do
++			AC_SEARCH_LIBS([$func], [bsd], [
++				AC_DEFINE(HAVE_LIBBSD, 1, [Use portable libbsd functions])
++				PC_LIBBSD_DEPENDENCY=libbsd
++				AC_SUBST(PC_LIBBSD_DEPENDENCY)
++			])
++		done
++	fi
++])
+ 
+ AC_ARG_ENABLE(sha1, AC_HELP_STRING([--disable-sha1], [Disable SHA1 RRSIG support, does not disable nsec3 support]))
+ case "$enable_sha1" in
+@@ -1619,6 +1632,11 @@ struct tm;
+ char *strptime(const char *s, const char *format, struct tm *tm);
+ #endif
+ 
++#ifdef HAVE_LIBBSD
++#include <bsd/string.h>
++#include <bsd/stdlib.h>
++#endif
++
+ #ifdef HAVE_LIBRESSL
+ #  if !HAVE_DECL_STRLCPY
+ size_t strlcpy(char *dst, const char *src, size_t siz);
+--- unbound-1.6.7.orig/contrib/libunbound.pc.in
++++ unbound-1.6.7/contrib/libunbound.pc.in
+@@ -8,6 +8,7 @@ Description: Library with validating, re
+ URL: http://www.unbound.net
+ Version: @PACKAGE_VERSION@
+ Requires: libcrypto libssl @PC_LIBEVENT_DEPENDENCY@ @PC_PY_DEPENDENCY@
++Requires.private: @PC_LIBBSD_DEPENDENCY@
+ Libs: -L${libdir} -lunbound
+ Libs.private: @SSLLIB@ @LIBS@
+ Cflags: -I${includedir} 
+--- unbound-1.6.7.orig/doc/unbound.conf.5.in
++++ unbound-1.6.7/doc/unbound.conf.5.in
+@@ -1279,7 +1279,7 @@ section for options.  To setup the corre
+ \fIunbound\-control\-setup\fR(8) utility.
+ .TP 5
+ .B control\-enable: \fI<yes or no>
+-The option is used to enable remote control, default is "no".
++The option is used to enable remote control, default is "yes".
+ If turned off, the server does not listen for control commands.
+ .TP 5
+ .B control\-interface: \fI<ip address or path>
+--- unbound-1.6.7.orig/smallapp/unbound-control-setup.sh.in
++++ unbound-1.6.7/smallapp/unbound-control-setup.sh.in
+@@ -155,6 +155,6 @@ chmod o-rw $SVR_BASE.pem $SVR_BASE.key $
+ rm -f request.cfg
+ rm -f $CTL_BASE"_trust.pem" $SVR_BASE"_trust.pem" $SVR_BASE"_trust.srl"
+ 
+-echo "Setup success. Certificates created. Enable in unbound.conf file to use"
++echo "Setup success. Certificates created."
+ 
+ exit 0
+--- unbound-1.6.7.orig/util/config_file.c
++++ unbound-1.6.7/util/config_file.c
+@@ -154,7 +154,7 @@ config_create(void)
+ 	init_outgoing_availports(cfg->outgoing_avail_ports, 65536);
+ 	if(!(cfg->username = strdup(UB_USERNAME))) goto error_exit;
+ #ifdef HAVE_CHROOT
+-	if(!(cfg->chrootdir = strdup(CHROOT_DIR))) goto error_exit;
++	if(!(cfg->chrootdir = strdup(""))) goto error_exit;
+ #endif
+ 	if(!(cfg->directory = strdup(RUN_DIR))) goto error_exit;
+ 	if(!(cfg->logfile = strdup(""))) goto error_exit;
+@@ -236,7 +236,7 @@ config_create(void)
+ 	cfg->unblock_lan_zones = 0;
+ 	cfg->insecure_lan_zones = 0;
+ 	cfg->python_script = NULL;
+-	cfg->remote_control_enable = 0;
++	cfg->remote_control_enable = 1;
+ 	cfg->control_ifs = NULL;
+ 	cfg->control_port = UNBOUND_CONTROL_PORT;
+ 	cfg->remote_control_use_cert = 1;
+--- unbound-1.6.7.orig/util/random.c
++++ unbound-1.6.7/util/random.c
+@@ -78,7 +78,7 @@
+  */
+ #define MAX_VALUE 0x7fffffff
+ 
+-#if defined(HAVE_SSL)
++#if defined(HAVE_SSL) || defined(HAVE_LIBBSD)
+ void
+ ub_systemseed(unsigned int ATTR_UNUSED(seed))
+ {
+@@ -208,10 +208,10 @@ long int ub_random(struct ub_randstate*
+ 	}
+ 	return x & MAX_VALUE;
+ }
+-#endif /* HAVE_SSL or HAVE_NSS or HAVE_NETTLE */
++#endif /* HAVE_SSL or HAVE_LIBBSD or HAVE_NSS or HAVE_NETTLE */
+ 
+ 
+-#if defined(HAVE_NSS) || defined(HAVE_NETTLE)
++#if defined(HAVE_NSS) || defined(HAVE_NETTLE) && !defined(HAVE_LIBBSD)
+ long int
+ ub_random_max(struct ub_randstate* state, long int x)
+ {
+@@ -223,7 +223,7 @@ ub_random_max(struct ub_randstate* state
+ 		v = ub_random(state);
+ 	return (v % x);
+ }
+-#endif /* HAVE_NSS or HAVE_NETTLE */
++#endif /* HAVE_NSS or HAVE_NETTLE and !HAVE_LIBBSD */
+ 
+ void 
+ ub_randfree(struct ub_randstate* s)
