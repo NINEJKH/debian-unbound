@@ -17,6 +17,7 @@ while IFS= read -r -d '' -u 9; do
   temp="${REPLY##*targets/}"
   temp="${temp%*/Dockerfile}"
 
+  uscan --help
   uscan --report-status --dehs "targets/${temp}/debian/"
 
   cat <<EOF | tee changelog.txt
