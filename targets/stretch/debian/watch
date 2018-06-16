@@ -1,0 +1,4 @@
+version=3
+http://www.unbound.net/download.html \
+ downloads/unbound-(.+)\.tar\.gz \
+ debian uupdate

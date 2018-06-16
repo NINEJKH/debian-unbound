@@ -1,0 +1,3 @@
+debian/tmp-lib/usr/include/unbound.h usr/include
+debian/tmp-lib/usr/include/unbound-event.h usr/include
+debian/tmp-lib/usr/share/man/man3/libunbound.3 usr/share/man/man3

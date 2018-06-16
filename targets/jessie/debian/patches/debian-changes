@@ -1,0 +1,105 @@
+Description: <short summary of the patch>
+ TODO: Put a short summary on the line above and replace this paragraph
+ with a longer explanation of this change. Complete the meta-information
+ with other relevant fields (see below for details). To make it easier, the
+ information below has been extracted from the changelog. Adjust it or drop
+ it.
+ .
+ unbound (1.6.0-2~bpo8+1) jessie-backports; urgency=medium
+ .
+   * Rebuild for jessie-backports.
+   * Revert "debian/: Enable dnstap support"
+Author: Robert Edmonds <edmonds@debian.org>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: 2016-12-29
+
+--- unbound-1.6.0.orig/acx_python.m4
++++ unbound-1.6.0/acx_python.m4
+@@ -43,7 +43,12 @@ $ac_distutils_result])
+                 if test -n "${python_path}"; then
+                         python_path="-I$python_path"
+                 fi
+-                PYTHON_CPPFLAGS=$python_path
++                python_multiarch_path=`$PYTHON -c "import distutils.sysconfig; \
++                        print(distutils.sysconfig.get_python_inc(plat_specific=1));"`
++                if test -n "${python_multiarch_path}"; then
++                        python_multiarch_path="-I$python_multiarch_path"
++                fi
++                PYTHON_CPPFLAGS="$python_path $python_multiarch_path"
+         fi
+         AC_MSG_RESULT([$PYTHON_CPPFLAGS])
+         AC_SUBST([PYTHON_CPPFLAGS])
+--- unbound-1.6.0.orig/doc/unbound.conf.5.in
++++ unbound-1.6.0/doc/unbound.conf.5.in
+@@ -1205,7 +1205,7 @@ section for options.  To setup the corre
+ \fIunbound\-control\-setup\fR(8) utility.
+ .TP 5
+ .B control\-enable: \fI<yes or no>
+-The option is used to enable remote control, default is "no".
++The option is used to enable remote control, default is "yes".
+ If turned off, the server does not listen for control commands.
+ .TP 5
+ .B control\-interface: \fI<ip address or path>
+--- unbound-1.6.0.orig/smallapp/unbound-control-setup.sh.in
++++ unbound-1.6.0/smallapp/unbound-control-setup.sh.in
+@@ -155,6 +155,6 @@ chmod o-rw $SVR_BASE.pem $SVR_BASE.key $
+ rm -f request.cfg
+ rm -f $CTL_BASE"_trust.pem" $SVR_BASE"_trust.pem" $SVR_BASE"_trust.srl"
+ 
+-echo "Setup success. Certificates created. Enable in unbound.conf file to use"
++echo "Setup success. Certificates created."
+ 
+ exit 0
+--- unbound-1.6.0.orig/util/config_file.c
++++ unbound-1.6.0/util/config_file.c
+@@ -149,7 +149,7 @@ config_create(void)
+ 	init_outgoing_availports(cfg->outgoing_avail_ports, 65536);
+ 	if(!(cfg->username = strdup(UB_USERNAME))) goto error_exit;
+ #ifdef HAVE_CHROOT
+-	if(!(cfg->chrootdir = strdup(CHROOT_DIR))) goto error_exit;
++	if(!(cfg->chrootdir = strdup(""))) goto error_exit;
+ #endif
+ 	if(!(cfg->directory = strdup(RUN_DIR))) goto error_exit;
+ 	if(!(cfg->logfile = strdup(""))) goto error_exit;
+@@ -219,7 +219,7 @@ config_create(void)
+ 	cfg->unblock_lan_zones = 0;
+ 	cfg->insecure_lan_zones = 0;
+ 	cfg->python_script = NULL;
+-	cfg->remote_control_enable = 0;
++	cfg->remote_control_enable = 1;
+ 	cfg->control_ifs = NULL;
+ 	cfg->control_port = UNBOUND_CONTROL_PORT;
+ 	cfg->remote_control_use_cert = 1;
+--- unbound-1.6.0.orig/util/configparser.y
++++ unbound-1.6.0/util/configparser.y
+@@ -1201,9 +1201,16 @@ server_fake_dsa: VAR_FAKE_DSA STRING_ARG
+ 		OUTYY(("P(server_fake_dsa:%s)\n", $2));
+ 		if(strcmp($2, "yes") != 0 && strcmp($2, "no") != 0)
+ 			yyerror("expected yes or no.");
+-		else fake_dsa = (strcmp($2, "yes")==0);
+-		if(fake_dsa)
+-			log_warn("test option fake_dsa is enabled");
++		else {
++			int fake_dsa_val = strcmp($2, "yes")==0;
++			if(fake_dsa_val)
++#ifdef HAVE_SSL
++				log_warn("test option fake_dsa is enabled");
++			fake_dsa = fake_dsa_val;
++#else
++				log_warn("test option fake_dsa is ignored");
++#endif
++		}
+ 		free($2);
+ 	}
+ 	;

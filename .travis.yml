@@ -1,0 +1,32 @@
+sudo: required
+
+language: minimal
+
+services:
+  - docker
+
+addons:
+  apt:
+    packages:
+      - xmlstarlet
+      - devscripts
+      - libwww-perl
+
+env:
+  global:
+    - PACKAGE_NAME: unbound
+    - BINTRAY_PROJECT: 9jkh/unbound
+    # BINTRAY_USER
+    - secure: "cQ2Kw4PXvEerMUMgdZRf4MsCqTPDi1tJxuuz2YKQ/Gqbm0MbFKIKgKG3ZKBkomqW8TzVX368RsIsNlxSObeos/fGL6dtzn6T5fTdvneRz1WRhSIF2OQqTnP+gO7BKoTYMf47A5S5HvNTDQUBJsD8boNufoodxF3ITD3N19qnlva7v0DJ/DxnkAjqRO/vc9qtCK7gCNJI0KYMI5X+ZQu2+1JJCgdPZMSovRpmnWPEEAbkks9l0ud05dDlXxlM06ltUw2xUnSxSD227ved8OI2Ry+aA4nPPF62BmHqF+FOAabZDPnTIWdZLWBlMWoco9ScakGZ47crtjXfH1reevMTgxEP1oChrVHPufs8N8lVSqEKmhuqq2ds9xUWNHktaA4exUizYz2DT9l2Izxf7NELo37pi+yT7R+nM5jXI+rO3sPrU84zb6GAm0J2pFKdRyHz94JfgP6qrYRYiRfg9Z3lF1+yPQub2s3KOjEu0QM83imsDeO4zUw/ibZva/MoZUSpov9sw8fZFDTsq6WnYHjUi3WhfmvypLGPFDRUaFNliTFxSvtfxL/dX4fyW7lYLBTHDFguMiS9wRRPmNmtkDJpmnfD63jM6tuRMsY2py7/EbASYsyUVoFSCEz6gm/XQ9mZnXQ0LiXFrkiSt4vn/wCK+InPvgqUllnW6ptOAlpCe2I="
+    # BINTRAY_API_KEY
+    - secure: "fj+NyAvBjk1MOA8MvIQtbfGMsrHmfpJrDHDa1aPPeBbf8mH9fk6oLmXBqH4TjaX1mF9QlUGAhq0IBmgI/WiejHueSLQlnluBNbZx5rc0wPW58Nfas4bRU/MLnCeUjctWzQAI8rSmV36+4g0LrLzTcz0uzY0vzUHXB+OI/bgQ9wc1QPyC6dqHBUtbXcgdqU5U3XhlUMnfdABrFYufDHrW2qXTSyo91spE0J2bptmGf+3rDwwT0f0oqoltU9D0oyaMO8bJpQV4GrnhXdq0KeHPSVV2ARpMAm5z/y+meKJ7iXx6F9bunxYGervM9x7HvnwgO32SqYD25SmC1LGVpjZ1TTyEMs92D6+hXEIMZwWRVOTf2WosY61gqmzeupnZvouBZci4QzjpdxyzJtxwVEUcfXlf7lTzVrhIzEBurN4vKJBer5TKOm86BxdASG9Oad3nkGokW09Km2uXsKYe5Gv37z9p3toL7p0K7Z3WNZYkUT0HM49jyD04m4lqcWIIoT2G5Ipv11xhHy2WY2bigpgnaf6LeqbbudJfCdQ2CPv2QSgdPINE1LbzhcXLxyDYbHQOQXQ/p0aw/8EFxrNWSR84aqWdx8L+oqjNgx+lQjChkMEkKWtKCeCcMQ0M8iqwpD7ihP55Rx3paOOtRAJ1iKjuavTDW3uF+SWGvKsxT4xpsnM="
+
+before_install:
+  - ./build.sh
+
+deploy:
+  provider: script
+  script: "./publish.sh"
+  skip_cleanup: true
+  on:
+    branch: master
