@@ -17,7 +17,7 @@ while IFS= read -r -d '' -u 9; do
   temp="${REPLY##*targets/}"
   temp="${temp%*/Dockerfile}"
 
-  dehs="$((cd "targets/${temp}" && uscan --report-status --dehs))"
+  dehs="$( (cd "targets/${temp}" && uscan --report-status --dehs) )"
 
   cat <<EOF | tee changelog.txt
 unbound ($(echo "${dehs}" | xmlstarlet sel --template --value-of "/dehs/upstream-version"))-${TRAVIS_BUILD_NUMBER}) ${temp}; urgency=medium
