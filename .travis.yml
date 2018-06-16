@@ -5,6 +5,11 @@ language: minimal
 services:
   - docker
 
+addons:
+  apt:
+    packages:
+      - xmlstarlet
+
 env:
   global:
     - PACKAGE_NAME: unbound
