@@ -17,7 +17,9 @@ while IFS= read -r -d '' -u 9; do
   temp="${REPLY##*targets/}"
   temp="${temp%*/Dockerfile}"
 
-  uscan --report-status --dehs "targets/${temp}"
+  echo "targets/${temp}/"
+  ls -lh "targets/${temp}/"*
+  uscan --report-status --dehs "targets/${temp}/"
 
   cat <<EOF | tee changelog.txt
 unbound ($(uscan --report-status --dehs "targets/${temp}" | xmlstarlet sel --template --value-of "/dehs/upstream-version")-${TRAVIS_BUILD_NUMBER}) ${temp}; urgency=medium
@@ -35,13 +37,11 @@ EOF
   docker build \
     --pull \
     --build-arg "PACKAGE_NAME=${PACKAGE_NAME}" \
-    --build-arg "JDK_DOWNLOAD_URL=${JDK_DOWNLOAD_URL}" \
-    --build-arg "REVISION=${TRAVIS_BUILD_NUMBER}" \
     -t "dotdeb-${PACKAGE_NAME}:${temp}" \
     -f "${REPLY}" \
     "targets/${temp}"
 
-  for file in $(docker run "dotdeb-${PACKAGE_NAME}:${temp}" bash -c 'ls /home/foobar/*.deb'); do
+  for file in $(docker run "dotdeb-${PACKAGE_NAME}:${temp}" bash -c 'ls /usr/src/*.deb'); do
     last_docker_id="$(docker ps -l -q)"
     consolelog "* fetching artefact ${file}..."
     docker cp "${last_docker_id}:${file}" "targets/${temp}"
