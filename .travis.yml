@@ -10,6 +10,7 @@ addons:
     packages:
       - xmlstarlet
       - devscripts
+      - libwww-perl
 
 env:
   global:
