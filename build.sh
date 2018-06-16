@@ -20,7 +20,7 @@ while IFS= read -r -d '' -u 9; do
   dehs="$( (cd "targets/${temp}" && uscan --report-status --dehs) )"
 
   cat <<EOF | tee changelog.txt
-unbound ($(echo "${dehs}" | xmlstarlet sel --template --value-of "/dehs/upstream-version"))-${TRAVIS_BUILD_NUMBER}) ${temp}; urgency=medium
+unbound ($(echo "${dehs}" | xmlstarlet sel --template --value-of "/dehs/upstream-version")-${TRAVIS_BUILD_NUMBER}) ${temp}; urgency=medium
 
   * $(echo "${TRAVIS_COMMIT_MESSAGE}" | head -n1)
 
